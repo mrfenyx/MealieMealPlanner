@@ -3,79 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <title>✅ Done Recipes</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body>
-    <h1>✅ Done Recipes</h1>
-    <a href="{{ url_for('index') }}">← Back to Planner</a>
+<body class="bg-gray-900 text-white min-h-screen font-sans">
+    <header class="bg-orange-500 px-6 py-4 flex justify-between items-center shadow-md">
+        <h1 class="text-2xl font-bold">✅ Done Recipes</h1>
+        <a href="{{ url_for('index') }}" class="bg-white text-orange-500 font-semibold px-4 py-2 rounded hover:bg-gray-100">← Back to Planner</a>
+    </header>
 
-    {% if items %}
-        <div class="card-container">
-            {% for item in items %}
-                <div class="card">
-                    {% if item.image_url %}
-                        <img src="{{ item.image_url }}" alt="Image for {{ item.recipe.name }}">
-                    {% else %}
-                        <img src="https://via.placeholder.com/200x140?text=No+Image" alt="No image">
-                    {% endif %}
-                    <div class="card-content">
-                        <div class="card-title">
-                            {% if item.recipe_url %}
-                                <a href="{{ item.recipe_url }}" target="_blank">{{ item.recipe.name }}</a>
-                            {% else %}
-                                {{ item.recipe.name }}
-                            {% endif %}
+    <main class="p-6">
+        {% if items %}
+            <div class="flex flex-wrap gap-6 justify-center">
+                {% for item in items %}
+                    <div class="bg-gray-800 rounded-lg shadow-md overflow-hidden w-full max-w-sm flex flex-col md:flex-row">
+                        <img src="{{ item.image_url or 'https://via.placeholder.com/200x140?text=No+Image' }}" class="w-40 object-cover object-center flex-shrink-0" alt="Image for {{ item.recipe.name }}">
+                        <div class="p-4 flex flex-col justify-between flex-grow">
+                            <div>
+                                <h2 class="text-lg font-bold mb-2">
+                                    <a href="{{ item.recipe_url }}" class="text-orange-400 hover:underline" target="_blank">{{ item.recipe.name }}</a>
+                                </h2>
+                                <p class="text-sm text-gray-300">
+                                    {{ item.recipe.description[:100] }}{% if item.recipe.description|length > 100 %}...{% endif %}
+                                </p>
+                            </div>
+                            <button class="mt-4 bg-white text-orange-500 px-3 py-1 rounded hover:bg-gray-200 readd-button" data-meal-id="{{ item.id }}">➕ Re-add</button>
                         </div>
-                        <div class="card-description">
-                            {{ item.recipe.description[:100] }}{% if item.recipe.description|length > 100 %}...{% endif %}
-                        </div>
-                        <button class="done-button" data-meal-id="{{ item.id }}">➕ Re-add</button>
                     </div>
-                </div>
-            {% endfor %}
-        </div>
-    {% else %}
-        <p>No completed meals.</p>
-    {% endif %}
+                {% endfor %}
+            </div>
+        {% else %}
+            <p class="text-center text-gray-400 mt-8">No completed meals.</p>
+        {% endif %}
+    </main>
 
     <script>
         document.addEventListener("DOMContentLoaded", () => {
-            document.querySelectorAll(".done-button").forEach(button => {
+            document.querySelectorAll(".readd-button").forEach(button => {
                 button.addEventListener("click", () => {
                     const mealId = button.getAttribute("data-meal-id");
                     fetch(`/readd/${mealId}`, {
                         method: "POST",
                         headers: { "Content-Type": "application/json" }
                     }).then(response => response.json())
-                    .then(data => {
-                        if (data.success) {
-                            const card = button.closest('.card');
-                            card.remove();
-                        } else {
-                            alert("Failed to re-add meal: " + (data.message || "Unknown error"));
-                        }
-                    }).catch(error => {
-                        alert("Error: " + error);
-                    });
+                      .then(data => {
+                          if (data.success) {
+                              const card = button.closest('.bg-gray-800');
+                              card.remove();
+                          } else {
+                              alert("Failed to re-add meal: " + (data.message || "Unknown error"));
+                          }
+                      }).catch(error => {
+                          alert("Error: " + error);
+                      });
                 });
             });
         });
-        function readd(itemId, buttonElement) {
-            fetch(`/readd/${itemId}`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" }
-            }).then(response => response.json())
-              .then(data => {
-                  if (data.success) {
-                      const card = buttonElement.closest('.card');
-                      card.remove();
-                  } else {
-                      alert("Failed to re-add meal: " + (data.message || "Unknown error"));
-                  }
-              }).catch(error => {
-                  alert("Error: " + error);
-              });
-        }
     </script>
 </body>
 </html>
