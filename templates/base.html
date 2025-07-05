@@ -93,22 +93,54 @@
             }
         });
 
-        ["markdone", "remove", "readd"].forEach(action => {
-            document.querySelectorAll(`.${action}-action`).forEach(button => {
-                button.addEventListener("click", () => {
-                    const id = button.getAttribute("data-meal-id");
-                    fetch(`/${action}/${id}`, {
-                        method: "POST",
-                        headers: { "Content-Type": "application/json" }
-                    }).then(res => res.json())
+        document.querySelectorAll(".markdone-action").forEach(button => {
+            button.addEventListener("click", () => {
+                const id = button.getAttribute("data-meal-id");
+                fetch(`/done/${id}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                }).then(res => res.json())
                     .then(data => {
                         if (data.success) {
                             button.closest(".bg-gray-800").remove();
                         } else {
-                            alert(`Failed to ${action} meal.`);
+                            alert("Failed to mark as done.");
                         }
                     });
-                });
+            });
+        });
+
+        document.querySelectorAll(".remove-action").forEach(button => {
+            button.addEventListener("click", () => {
+                const id = button.getAttribute("data-meal-id");
+                fetch(`/remove/${id}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                }).then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            button.closest(".bg-gray-800").remove();
+                        } else {
+                            alert("Failed to remove meal.");
+                        }
+                    });
+            });
+        });
+
+        document.querySelectorAll(".readd-action").forEach(button => {
+            button.addEventListener("click", () => {
+                const id = button.getAttribute("data-meal-id");
+                fetch(`/readd/${id}`, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" }
+                }).then(res => res.json())
+                    .then(data => {
+                        if (data.success) {
+                            button.closest(".bg-gray-800").remove();
+                        } else {
+                            alert("Failed to re-add meal.");
+                        }
+                    });
             });
         });
     </script>
