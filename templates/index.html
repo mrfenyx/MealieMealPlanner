@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Mealie Meal Plan</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <h1>🥗 Weekly Meal Plan</h1>
+
+    {% if items %}
+        <div class="card-container">
+            {% for item in items %}
+                <div class="card">
+                    {% if item.image_url %}
+                        <img src="{{ item.image_url }}" alt="Image for {{ item.recipe.name }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/200x140?text=No+Image" alt="No image">
+                    {% endif %}
+                    <div class="card-content">
+                        <div class="card-title">
+                            {% if item.recipe_url %}
+                                <a href="{{ item.recipe_url }}" target="_blank">{{ item.recipe.name }}</a>
+                            {% else %}
+                                {{ item.recipe.name }}
+                            {% endif %}
+                        </div>
+                        <div class="card-description">
+                            {{ item.recipe.description[:100] }}{% if item.recipe.description|length > 100 %}...{% endif %}
+                        </div>
+                        <button class="done-button" onclick="markDone({{ item.id }}, this)">✅ Done</button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% else %}
+        <p>No meals found for this date range.</p>
+    {% endif %}
+
+    <script>
+        function markDone(itemId, buttonElement) {
+            fetch(`/remove/${itemId}`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                }
+            }).then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    // Remove the card element from the DOM
+                    const card = buttonElement.closest('.card');
+                    card.remove();
+                } else {
+                    alert("Failed to remove meal: " + (data.message || "Unknown error"));
+                }
+            }).catch(error => {
+                alert("Error: " + error);
+            });
+        }
+    </script>
+
+</body>
+</html>
