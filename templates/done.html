@@ -1,168 +1,32 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Done Recipes</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <script src="https://cdn.tailwindcss.com"></script>
-</head>
-<body class="bg-gray-900 text-white min-h-screen font-sans">
-    <header class="bg-orange-500 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-md">
-        <h1 class="text-xl sm:text-2xl font-bold">✅ Done Recipes</h1>
-        <a href="{{ url_for('index') }}"
-            class="flex items-center gap-2 bg-orange-500 text-white font-semibold px-3 py-2 sm:px-4 sm:py-2 rounded hover:bg-orange-600 text-sm sm:text-base">
-            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
-                    viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
-            </svg>
-            Back to Planner
-        </a>
-    </header>
+{% extends "base.html" %}
+{% import "macros.html" as macros %}
 
-    <main class="p-2 sm:p-6">
-        {% if items %}
-            <div class="flex flex-col gap-4 sm:gap-6 sm:flex-row sm:flex-wrap sm:justify-center">
-                {% for item in items %}
-                    <div class="relative bg-gray-800 rounded-lg shadow-md overflow-hidden flex flex-row w-full max-w-full sm:max-w-sm mx-auto sm:mx-0 h-36 sm:h-48">
-                        <!-- Dropdown Menu -->
-                        <div class="absolute top-1 right-1 z-10">
-                            <button class="text-white hover:text-orange-400 focus:outline-none dropdown-toggle" data-menu-id="{{ item.id }}">
-                                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-6 h-6">
-                                    <path d="M12 7a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM12 13.5a1.5 1.5 0 110-3 1.5 1.5 0 010 3zM12 20a1.5 1.5 0 110-3 1.5 1.5 0 010 3z" />
-                                </svg>
-                            </button>
-                            <div class="hidden absolute right-0 mt-2 w-max bg-gray-900 text-white text-sm rounded-lg shadow-lg dropdown-menu" id="menu-{{ item.id }}">
-                                <button class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-700 text-sm readd-action" data-meal-id="{{ item.id }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
-                                    </svg>
-                                    Re-add
-                                </button>
-                                <button class="w-full flex items-center gap-2 px-4 py-2 hover:bg-gray-700 text-sm remove-action" data-meal-id="{{ item.id }}">
-                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                                    </svg>
-                                    Delete
-                                </button>
-                            </div>
-                        </div>
+{% block title %}Completed Meals{% endblock %}
 
-                        <!-- Image -->
-                        <img src="{{ item.image_url or 'https://via.placeholder.com/200x140?text=No+Image' }}"
-                             class="w-28 sm:w-32 h-full object-cover object-center flex-shrink-0"
-                             alt="Image for {{ item.recipe.name }}">
+{% block header %}
+<header class="bg-orange-500 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-md">
+    <h1 class="text-xl sm:text-2xl font-bold">✅ Done Recipes</h1>
+    <a href="{{ url_for('index') }}"
+        class="flex items-center gap-2 bg-orange-500 text-white font-semibold px-3 py-2 sm:px-4 sm:py-2 rounded hover:bg-orange-600 text-sm sm:text-base">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none"
+            viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M15 19l-7-7 7-7" />
+        </svg>
+        Back to Plan
+    </a>
+</header>
+{% endblock %}
 
-                        <!-- Content -->
-                        <div class="p-3 sm:p-4 flex flex-col flex-grow">
-                            <!-- Title + Description -->
-                            <div>
-                                <h2 class="text-base sm:text-lg font-bold mb-1 sm:mb-2 leading-snug line-clamp-2">
-                                    <a href="{{ item.recipe_url }}" class="text-orange-400 hover:underline" target="_blank">{{ item.recipe.name }}</a>
-                                </h2>
-                                <p class="text-xs sm:text-sm text-gray-300 line-clamp-3">
-                                    {{ item.recipe.description }}
-                                </p>
-                            </div>
-
-                            <!-- Timing Info pinned to bottom -->
-                            {% set prep = (item.recipe.prepTime.split()[0]|int) if item.recipe.prepTime else 0 %}
-                            {% set perform = (item.recipe.performTime.split()[0]|int) if item.recipe.performTime else 0 %}
-                            {% set total = prep + perform %}
-
-                            <div class="mt-auto pt-3 sm:pt-4 flex flex-wrap gap-2 justify-between text-xs sm:text-sm text-gray-300">
-                                <div class="flex items-center gap-1 group relative">
-                                    <!-- Clock Icon (Total Time) -->
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M12 20C16.4 20 20 16.4 20 12S16.4 4 12 4 4 7.6 4 12 7.6 20 12 20M12 2C17.5 2 22 6.5 22 12S17.5 22 12 22C6.5 22 2 17.5 2 12C2 6.5 6.5 2 12 2M17 13.9L16.3 15.2L11 12.3V7H12.5V11.4L17 13.9Z" />
-                                    </svg>
-                                    {{ total }} min
-                                    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-                                        Total Time
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-1 group relative">
-                                    <!-- Knife Icon (Prep Time) -->
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M20.62,2C23.97,7.61 12.47,20.15 12.47,20.15L9.6,17.28L4.91,22L2.77,19.86L20.62,2Z" />
-                                    </svg>
-                                    {{ prep }} min
-                                    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-                                        Prep Time
-                                    </span>
-                                </div>
-                                <div class="flex items-center gap-1 group relative">
-                                    <!-- Pot Icon (Cook Time) -->
-                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" d="M8 1.5C6.15 1.5 4.65 3 4.65 4.85C4.65 6.7 6.15 8.2 8 8.2H9.53C9.92 8.2 10.29 8.3 10.61 8.5H12.63C12.05 7.45 10.86 6.75 9.53 6.75H8C7 6.75 6.15 5.77 6.15 4.75C6.15 3.73 7 3 8 3V1.5M12.85 2C12.85 3 12 3.85 11 3.85V5.35C12.92 5.35 14.5 6.7 14.89 8.5H16.42C16.12 6.67 14.96 5.15 13.35 4.38C13.97 3.77 14.35 2.93 14.35 2H12.85M3 10V12H5V19C5 20.11 5.9 21 7 21H17C18.11 21 19 20.11 19 19V12H21V10H3M7 12H17V19H7V12Z" />
-                                    </svg>
-                                    {{ perform }} min
-                                    <span class="absolute bottom-full mb-1 left-1/2 -translate-x-1/2 whitespace-nowrap bg-black text-white text-xs rounded py-1 px-2 opacity-0 group-hover:opacity-100 transition pointer-events-none z-10">
-                                        Cook Time
-                                    </span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
-        {% else %}
-            <p class="text-center text-gray-400 mt-8">No done meals found.</p>
-        {% endif %}
-    </main>
-
-    <script>
-        document.querySelectorAll(".dropdown-toggle").forEach(button => {
-            button.addEventListener("click", () => {
-                const id = button.getAttribute("data-menu-id");
-                document.querySelectorAll(".dropdown-menu").forEach(menu => {
-                    if (menu.id === "menu-" + id) {
-                        menu.classList.toggle("hidden");
-                    } else {
-                        menu.classList.add("hidden");
-                    }
-                });
-            });
-        });
-
-        document.addEventListener("click", (e) => {
-            if (!e.target.closest(".dropdown-toggle") && !e.target.closest(".dropdown-menu")) {
-                document.querySelectorAll(".dropdown-menu").forEach(menu => menu.classList.add("hidden"));
-            }
-        });
-
-        document.querySelectorAll(".readd-action").forEach(button => {
-            button.addEventListener("click", () => {
-                const id = button.getAttribute("data-meal-id");
-                fetch(`/readd/${id}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                }).then(res => res.json())
-                  .then(data => {
-                      if (data.success) {
-                          button.closest(".bg-gray-800").remove();
-                      } else {
-                          alert("Failed to re-add recipe.");
-                      }
-                  });
-            });
-        });
-
-        document.querySelectorAll(".remove-action").forEach(button => {
-            button.addEventListener("click", () => {
-                const id = button.getAttribute("data-meal-id");
-                fetch(`/remove/${id}`, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" }
-                }).then(res => res.json())
-                  .then(data => {
-                      if (data.success) {
-                          button.closest(".bg-gray-800").remove();
-                      } else {
-                          alert("Failed to remove meal.");
-                      }
-                  });
-            });
-        });
-    </script>
-</body>
-</html>
+{% block content %}
+<main class="p-2 sm:p-6">
+    {% if items %}
+        <div class="flex flex-col gap-4 sm:gap-6 sm:flex-row sm:flex-wrap sm:justify-center">
+            {% for item in items %}
+                {{ macros.meal_card(item, show_done=False, show_remove=True, show_readd=True) }}
+            {% endfor %}
+        </div>
+    {% else %}
+        <p class="text-center text-gray-400 mt-8">No completed meals yet.</p>
+    {% endif %}
+</main>
+{% endblock %}
