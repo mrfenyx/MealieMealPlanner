@@ -49,7 +49,7 @@ def index():
     done_ids = set(get_all_done_ids())
 
     visible_items = [item for item in data.get("items", []) if item.get("id") not in done_ids]
-    return render_template("index.html", items=visible_items)
+    return render_template("index.html", items=visible_items, current_page="index")
 
 @app.route("/remove/<int:item_id>", methods=["POST"])
 def remove_meal(item_id):
@@ -85,7 +85,11 @@ def view_done():
     done_ids = set(get_all_done_ids())
 
     done_items = [item for item in data.get("items", []) if item.get("id") in done_ids]
-    return render_template("done.html", items=done_items)
+    return render_template("done.html", items=done_items, current_page="done")
+
+@app.route('/shopping-list')
+def shopping_list():
+    return render_template('shopping_list.html', current_page="shopping-list")
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
