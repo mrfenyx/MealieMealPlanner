@@ -88,3 +88,15 @@ h1 {
 .done-button:hover {
     background-color: #218838;
 }
+
+.nav-link {
+    display: inline-block;
+    margin: 1rem 0;
+    font-weight: bold;
+    color: #337ab7;
+    text-decoration: none;
+}
+
+.nav-link:hover {
+    text-decoration: underline;
+}
