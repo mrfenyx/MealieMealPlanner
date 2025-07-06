@@ -45,6 +45,12 @@
         id="addBtn"
         class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded"
       >Add to Shopping List</button>
+
+      <button
+        type="button"
+        id="addOGBtn"
+        class="mt-4 ml-2 bg-green-500 hover:bg-green-600 text-white font-semibold px-4 py-2 rounded"
+        >Add to OurGroceries</button>
     </form>
   {% else %}
     <p class="text-gray-400">No upcoming meals to pull ingredients from.</p>
@@ -76,28 +82,46 @@
       });
     });
 
-    // Add selected to shopping list
-    document.getElementById('addBtn').addEventListener('click', () => {
-      const selected = Array.from(
+    function postIngredients(url, successMsg, errorMsg) {
+        const selected = Array.from(
         document.querySelectorAll('input[name="ingredient"]:checked')
-      ).map(cb => ({
+        ).map(cb => ({
         id:   cb.value,
         name: cb.dataset.name
-      }));
+        }));
 
-      fetch('/shopping-list/add', {
+        fetch(url, {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({ingredients: selected})
-      })
-      .then(r => r.json())
-      .then(data => {
+        })
+        .then(r => r.json())
+        .then(data => {
         if (data.success) {
-          alert('Shopping list updated!');
+            alert(successMsg);
         } else {
-          alert('Failed to update shopping list.');
+            alert(errorMsg);
         }
-      });
+        })
+        .catch(() => {
+        alert(errorMsg);
+        });
+    }
+
+    document.getElementById('addBtn').addEventListener('click', () => {
+        postIngredients(
+        '/shopping-list/add',
+        'Shopping list updated!',
+        'Failed to update shopping list.'
+        );
+    });
+
+    document.getElementById('addOGBtn').addEventListener('click', () => {
+        postIngredients(
+        '/shopping-list/add-og',
+        'Sent to OurGroceries!',
+        'Failed to send to OurGroceries.'
+        );
     });
   </script>
 {% endblock %}

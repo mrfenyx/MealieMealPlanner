@@ -7,6 +7,7 @@ from db import (
     init_db, mark_done, re_add, get_all_done_ids,
     get_shopping_ids, add_shopping_items
 )
+import og
 
 app = Flask(__name__)
 CORS(app)
@@ -163,6 +164,22 @@ def add_to_shopping_list():
     add_shopping_items(db_items)
     return jsonify({"success": True})
 
+@app.route("/shopping-list/add-og", methods=["POST"])
+def add_to_ourgroceries():
+    data = request.get_json() or {}
+    items = data.get("ingredients", [])
+    # 1) save to local DB exactly like add_to_shopping_list()
+    db_items = [(itm["id"], itm["name"]) for itm in items]
+    add_shopping_items(db_items)
+
+    # 2) push to OurGroceries
+    try:
+        names = [itm["name"] for itm in items]
+        og.send_items_to_og_sync(config.OG_LIST_NAME, names)
+    except Exception as e:
+        return jsonify(success=False, message=str(e)), 500
+
+    return jsonify(success=True)
 
 @app.route("/add/<slug>", methods=["POST"])
 def add_to_plan(slug):
