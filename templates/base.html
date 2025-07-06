@@ -5,8 +5,13 @@
     <title>{% block title %}Meal Planner{% endblock %}</title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+      /* Helper to disable transitions briefly on first render */
+      .no-transition { transition: none !important; }
+    </style>
 </head>
 <body class="bg-gray-900 text-white min-h-screen font-sans">
+
     <!-- Header (always visible) -->
     <header class="bg-orange-500 px-4 py-3 sm:px-6 sm:py-4 flex justify-between items-center shadow-md">
         <div class="flex items-center gap-3">
@@ -21,25 +26,32 @@
         {% block header_actions %}{% endblock %}
     </header>
 
-    <div class="flex transition-all duration-300">
+    <!-- Container that will get shifted when sidebar is open -->
+    <div id="container" class="flex transition-all duration-300">
         <!-- Sidebar -->
-        <aside id="sidebar" class="w-64 bg-gray-900 border-r border-gray-700 transform -translate-x-full transition-transform duration-300 z-40 fixed top-[64px] md:top-[72px] bottom-0 left-0 h-full">
+        <aside
+            id="sidebar"
+            class="w-64 bg-gray-900 border-r border-gray-700 transform -translate-x-full transition-transform duration-300 z-40 fixed top-[64px] bottom-0 left-0 h-full"
+        >
             <nav class="p-4 flex flex-col gap-3">
-                <a href="{{ url_for('index') }}" class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page == 'index' else 'text-white hover:text-orange-400' }}">
+                <a href="{{ url_for('index') }}"
+                   class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page=='index' else 'text-white hover:text-orange-400' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M19,19V8H5V19H19M16,1H18V3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1M7,10H9V12H7V10M15,10H17V12H15V10M11,14H13V16H11V14M15,14H17V16H15V14Z" />
+                        <path d="M19,19V8H5V19H19M16,1H18V3H19A2,2 0 0,1 21,5V19A2,2 0 0,1 19,21H5C3.89,21 3,20.1 3,19V5C3,3.89 3.89,3 5,3H6V1H8V3H16V1M7,10H9V12H7V10M15,10H17V12H15V10M11,14H13V16H11V14M15,14H17V16H15V14Z"/>
                     </svg>
                     Meal Plan
                 </a>
-                <a href="{{ url_for('view_done') }}" class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page == 'done' else 'text-white hover:text-orange-400' }}">
+                <a href="{{ url_for('view_done') }}"
+                   class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page=='done' else 'text-white hover:text-orange-400' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M11,9H9V2H7V9H5V2H3V9C3,11.12 4.66,12.84 6.75,12.97V22H9.25V12.97C11.34,12.84 13,11.12 13,9V2H11V9M16,6V14H18.5V22H21V2C18.24,2 16,4.24 16,6Z" />
+                        <path d="M11,9H9V2H7V9H5V2H3V9C3,11.12 4.66,12.84 6.75,12.97V22H9.25V12.97C11.34,12.84 13,11.12 13,9V2H11V9M16,6V14H18.5V22H21V2C18.24,2 16,4.24 16,6Z"/>
                     </svg>
                     Done Recipes
                 </a>
-                <a href="{{ url_for('shopping_list') }}" class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page == 'shopping_list' else 'text-white hover:text-orange-400' }}">
+                <a href="{{ url_for('shopping_list') }}"
+                   class="flex items-center gap-2 rounded px-2 py-2 {{ 'bg-orange-900 text-orange-400 font-semibold' if current_page=='shopping_list' else 'text-white hover:text-orange-400' }}">
                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="currentColor" viewBox="0 0 24 24">
-                        <path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,20L1.5,16.5L2.91,15.09L5,17.17L9.59,12.59L11,14L5,20Z" />
+                        <path d="M3,5H9V11H3V5M5,7V9H7V7H5M11,7H21V9H11V7M11,15H21V17H11V15M5,20L1.5,16.5L2.91,15.09L5,17.17L9.59,12.59L11,14L5,20Z"/>
                     </svg>
                     Shopping List
                 </a>
@@ -47,33 +59,66 @@
         </aside>
 
         <!-- Main Content -->
-        <main id="mainContent" class="flex-1 p-2 sm:p-6 transition-all duration-300 ml-0">
+        <main id="mainContent" class="flex-1 p-2 sm:p-6 transition-all duration-300">
             {% block content %}{% endblock %}
         </main>
     </div>
 
     <script>
-        const sidebar = document.getElementById("sidebar");
-        const toggle = document.getElementById("menuToggle");
+        const sidebar     = document.getElementById("sidebar");
+        const toggle      = document.getElementById("menuToggle");
         const mainContent = document.getElementById("mainContent");
+        const container   = document.getElementById("container");
 
-        function updateMainContentMargin() {
-            if (window.innerWidth >= 768 && !sidebar.classList.contains("-translate-x-full")) {
-                mainContent.classList.add("ml-64");
+        // Persisted open state in localStorage
+        function isSidebarOpen() {
+            return localStorage.getItem('sidebarOpen') === 'true';
+        }
+        function setSidebarOpen(open) {
+            localStorage.setItem('sidebarOpen', open);
+        }
+
+        // Apply open/closed classes
+        function updateSidebarState() {
+            if (isSidebarOpen()) {
+                sidebar.classList.remove('-translate-x-full');
             } else {
-                mainContent.classList.remove("ml-64");
+                sidebar.classList.add('-translate-x-full');
+            }
+            updateMainContentMargin();
+        }
+
+        // On large screens, push the content over by sidebar width
+        function updateMainContentMargin() {
+            if (window.innerWidth >= 768 && !sidebar.classList.contains('-translate-x-full')) {
+                mainContent.classList.add('ml-64');
+            } else {
+                mainContent.classList.remove('ml-64');
             }
         }
 
-        toggle.addEventListener("click", () => {
-            sidebar.classList.toggle("-translate-x-full");
-            updateMainContentMargin();
+        // On page load: disable transitions, restore state, then re-enable
+        document.addEventListener('DOMContentLoaded', () => {
+            [sidebar, mainContent, container].forEach(el => el.classList.add('no-transition'));
+            updateSidebarState();
+            setTimeout(() => {
+                [sidebar, mainContent, container].forEach(el => el.classList.remove('no-transition'));
+            }, 0);
         });
 
-        window.addEventListener("resize", updateMainContentMargin);
-        document.addEventListener("DOMContentLoaded", updateMainContentMargin);
+        // Toggle button always works
+        toggle.addEventListener('click', () => {
+            const willOpen = sidebar.classList.contains('-translate-x-full');
+            setSidebarOpen(willOpen);
+            updateSidebarState();
+        });
 
-        // Dropdown menu logic
+        // Keep layout in sync on resize
+        window.addEventListener('resize', updateSidebarState);
+
+
+        // -- your existing dropdown / mark-done / remove / re-add listeners --
+
         document.querySelectorAll(".dropdown-toggle").forEach(button => {
             button.addEventListener("click", () => {
                 const id = button.getAttribute("data-menu-id");
@@ -100,13 +145,13 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" }
                 }).then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            button.closest(".bg-gray-800").remove();
-                        } else {
-                            alert("Failed to mark as done.");
-                        }
-                    });
+                 .then(data => {
+                     if (data.success) {
+                         button.closest(".bg-gray-800").remove();
+                     } else {
+                         alert("Failed to mark as done.");
+                     }
+                 });
             });
         });
 
@@ -117,13 +162,13 @@
                     method: "POST",
                     headers: { "Content-Type": "application/json" }
                 }).then(res => res.json())
-                    .then(data => {
-                        if (data.success) {
-                            button.closest(".bg-gray-800").remove();
-                        } else {
-                            alert("Failed to remove meal.");
-                        }
-                    });
+                 .then(data => {
+                     if (data.success) {
+                         button.closest(".bg-gray-800").remove();
+                     } else {
+                         alert("Failed to remove meal.");
+                     }
+                 });
             });
         });
 
@@ -143,6 +188,7 @@
                     });
             });
         });
+
     </script>
 </body>
 </html>
