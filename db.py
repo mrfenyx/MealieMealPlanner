@@ -12,6 +12,11 @@ def init_db():
                 done_at TEXT
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS shopping_list (
+                ingredient_id TEXT PRIMARY KEY
+            )
+        """)
         conn.commit()
 
 def mark_done(meal_id):
@@ -39,4 +44,20 @@ def re_add(meal_id):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM done_meals WHERE meal_id = ?", (meal_id,))
+        conn.commit()
+
+def get_shopping_ids():
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("SELECT ingredient_id FROM shopping_list")
+        return [row[0] for row in cursor.fetchall()]
+
+def add_shopping_items(ids):
+    with sqlite3.connect(DB_PATH) as conn:
+        cursor = conn.cursor()
+        cursor.execute("DELETE FROM shopping_list")
+        cursor.executemany(
+            "INSERT OR IGNORE INTO shopping_list (ingredient_id) VALUES (?)",
+            [(i,) for i in ids]
+        )
         conn.commit()

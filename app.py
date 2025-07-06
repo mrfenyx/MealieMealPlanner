@@ -1,13 +1,17 @@
-from flask import Flask, render_template, jsonify
+from flask import Flask, render_template, jsonify, request
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import requests
 import config
-from db import init_db, mark_done, re_add, get_all_done_ids
+from db import (
+    init_db, mark_done, re_add, get_all_done_ids,
+    get_shopping_ids, add_shopping_items
+)
 
 app = Flask(__name__)
 CORS(app)
 init_db()
+
 
 def get_meal_plan(start_date, end_date):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
@@ -16,7 +20,6 @@ def get_meal_plan(start_date, end_date):
         f"?start_date={start_date}&end_date={end_date}"
     )
     response = requests.get(url, headers=headers)
-
     try:
         data = response.json()
     except Exception:
@@ -29,10 +32,12 @@ def get_meal_plan(start_date, end_date):
 
     for item in data.get("items", []):
         recipe = item.get("recipe", {})
-        id = recipe.get("id")
+        _id = recipe.get("id")
         slug = recipe.get("slug")
-        if id:
-            item["image_url"] = f"{config.MEALIE_URL}/api/media/recipes/{id}/images/min-original.webp"
+        if _id:
+            item["image_url"] = (
+                f"{config.MEALIE_URL}/api/media/recipes/{_id}/images/min-original.webp"
+            )
         else:
             item["image_url"] = None
         if slug:
@@ -42,6 +47,7 @@ def get_meal_plan(start_date, end_date):
 
     return data
 
+
 @app.route("/")
 def index():
     today = datetime.now().date()
@@ -49,16 +55,22 @@ def index():
     end = today + timedelta(days=7)
     data = get_meal_plan(start.isoformat(), end.isoformat())
     done_ids = set(get_all_done_ids())
+    visible_items = [
+        item for item in data.get("items", [])
+        if item.get("id") not in done_ids
+    ]
+    return render_template(
+        "index.html",
+        items=visible_items,
+        current_page="index"
+    )
 
-    visible_items = [item for item in data.get("items", []) if item.get("id") not in done_ids]
-    return render_template("index.html", items=visible_items, current_page="index")
 
 @app.route("/remove/<int:item_id>", methods=["POST"])
 def remove_meal(item_id):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
     url = f"{config.MEALIE_URL}/api/households/mealplans/{item_id}"
     response = requests.delete(url, headers=headers)
-
     if response.ok:
         return jsonify({"success": True})
     else:
@@ -68,15 +80,18 @@ def remove_meal(item_id):
             "message": response.text
         }), 400
 
+
 @app.route("/done/<int:item_id>", methods=["POST"])
 def mark_meal_done(item_id):
     mark_done(item_id)
     return jsonify({"success": True})
 
+
 @app.route("/readd/<int:item_id>", methods=["POST"])
 def readd_meal(item_id):
     re_add(item_id)
     return jsonify({"success": True})
+
 
 @app.route("/done")
 def view_done():
@@ -85,9 +100,16 @@ def view_done():
     end = today + timedelta(days=7)
     data = get_meal_plan(start.isoformat(), end.isoformat())
     done_ids = set(get_all_done_ids())
+    done_items = [
+        item for item in data.get("items", [])
+        if item.get("id") in done_ids
+    ]
+    return render_template(
+        "done.html",
+        items=done_items,
+        current_page="done"
+    )
 
-    done_items = [item for item in data.get("items", []) if item.get("id") in done_ids]
-    return render_template("done.html", items=done_items, current_page="done")
 
 @app.route("/shopping-list")
 def shopping_list():
@@ -109,7 +131,9 @@ def shopping_list():
     recipes = []
     for item in upcoming:
         slug = item["recipe"]["slug"]
-        resp = requests.get(f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers)
+        resp = requests.get(
+            f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers
+        )
         if not resp.ok:
             continue
         recipe = resp.json()
@@ -122,49 +146,59 @@ def shopping_list():
             "ingredients": ingredients
         })
 
+    shopping_ids = get_shopping_ids()
+
     return render_template(
         "shopping_list.html",
         recipes=recipes,
+        shopping_ids=shopping_ids,
         current_page="shopping_list"
     )
 
+
+@app.route("/shopping-list/add", methods=["POST"])
+def add_to_shopping_list():
+    data = request.get_json() or {}
+    ids = data.get("ingredient_ids", [])
+    add_shopping_items(ids)
+    return jsonify({"success": True})
+
+
 @app.route("/add/<slug>", methods=["POST"])
 def add_to_plan(slug):
-    # 1) Fetch the recipe by slug to get its ID
     headers = {
         "Authorization": f"Bearer {config.MEALIE_API_TOKEN}",
         "Content-Type": "application/json"
     }
-    recipe_resp = requests.get(f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers)
+    recipe_resp = requests.get(
+        f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers
+    )
     if not recipe_resp.ok:
-        return jsonify(success=False,
-                       message=f"Could not fetch recipe “{slug}”: {recipe_resp.text}"), recipe_resp.status_code
+        return jsonify(
+            success=False,
+            message=f"Could not fetch recipe “{slug}”: {recipe_resp.text}"
+        ), recipe_resp.status_code
 
     recipe = recipe_resp.json()
     recipe_id = recipe.get("id")
     if not recipe_id:
-        return jsonify(success=False, message="Recipe ID missing in response"), 500
+        return jsonify(success=False, message="Missing recipe ID"), 500
 
-    # 2) Compute the date 7 days from now
     target_date = (datetime.now().date() + timedelta(days=7)).isoformat()
-
-    # 3) POST to Mealie’s “create mealplan entry” endpoint
     payload = {
         "date":       target_date,
         "recipeId":   recipe_id,
-        "entryType":  "dinner"     # or any valid slot: breakfast, lunch, etc.
+        "entryType":  "dinner"
     }
     add_resp = requests.post(
         f"{config.MEALIE_URL}/api/households/mealplans",
-        headers=headers,
-        json=payload
+        headers=headers, json=payload
     )
-
     if add_resp.ok:
         return jsonify(success=True), 201
     else:
-        return jsonify(success=False,
-                       message=add_resp.text), add_resp.status_code
+        return jsonify(success=False, message=add_resp.text), add_resp.status_code
+
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)

@@ -5,7 +5,19 @@
   <h1 class="text-2xl font-bold mb-4">🛒 Shopping List</h1>
 
   {% if recipes %}
-    <form id="shopping-form">
+    <!-- Toggle buttons -->
+    <div class="flex gap-4 mb-4">
+      <button
+        id="showAllBtn"
+        class="px-4 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600"
+      >Show All</button>
+      <button
+        id="showMissingBtn"
+        class="px-4 py-2 bg-gray-700 rounded text-sm hover:bg-gray-600"
+      >Show Missing</button>
+    </div>
+
+    <form id="shopping-form" data-shopping-ids=' {{ shopping_ids|tojson }} '>
       {% for rec in recipes %}
         <section class="mb-6">
           <h2 class="text-xl font-semibold mb-2">{{ rec.name }}</h2>
@@ -29,12 +41,59 @@
 
       <button
         type="button"
+        id="addBtn"
         class="mt-4 bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded"
-      >
-        Add to Shopping List
-      </button>
+      >Add to Shopping List</button>
     </form>
   {% else %}
     <p class="text-gray-400">No upcoming meals to pull ingredients from.</p>
   {% endif %}
+{% endblock %}
+
+{% block scripts %}
+  {{ super() }}
+  <script>
+    // pre-check boxes based on saved shopping list
+    const shoppingForm = document.getElementById('shopping-form');
+    const shoppingIds = new Set(JSON.parse(shoppingForm.dataset.shoppingIds));
+    document.querySelectorAll('input[name="ingredient"]').forEach(cb => {
+      if (shoppingIds.has(cb.value)) cb.checked = true;
+    });
+
+    // Show all ingredients
+    document.getElementById('showAllBtn').addEventListener('click', () => {
+      document.querySelectorAll('#shopping-form li').forEach(li => {
+        li.style.display = '';
+      });
+    });
+
+    // Show only missing (checked) ingredients
+    document.getElementById('showMissingBtn').addEventListener('click', () => {
+      document.querySelectorAll('#shopping-form li').forEach(li => {
+        const cb = li.querySelector('input[name="ingredient"]');
+        li.style.display = cb.checked ? '' : 'none' ;
+      });
+    });
+
+    // Add selected to shopping list
+    document.getElementById('addBtn').addEventListener('click', () => {
+      const selected = Array.from(
+        document.querySelectorAll('input[name="ingredient"]:checked')
+      ).map(cb => cb.value);
+
+      fetch('/shopping-list/add', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({ingredient_ids: selected})
+      })
+      .then(r => r.json())
+      .then(data => {
+        if (data.success) {
+          alert('Shopping list updated!');
+        } else {
+          alert('Failed to update shopping list.');
+        }
+      });
+    });
+  </script>
 {% endblock %}
