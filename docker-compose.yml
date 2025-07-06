@@ -1,0 +1,11 @@
+services:
+  mealie-planner:
+    build: .
+    restart: unless-stopped
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./.env
+    volumes:
+      # Persist the SQLite database
+      - ./planner.db:/app/planner.db
