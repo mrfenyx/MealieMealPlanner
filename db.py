@@ -1,7 +1,7 @@
 import sqlite3
 from datetime import datetime
 
-DB_PATH = "done.db"
+DB_PATH = "planner.db"
 
 def init_db():
     with sqlite3.connect(DB_PATH) as conn:
