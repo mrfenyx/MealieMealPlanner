@@ -14,7 +14,8 @@ def init_db():
         """)
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS shopping_list (
-                ingredient_id TEXT PRIMARY KEY
+                ingredient_id TEXT PRIMARY KEY,
+                ingridient_name TEXT
             )
         """)
         conn.commit()
@@ -52,12 +53,12 @@ def get_shopping_ids():
         cursor.execute("SELECT ingredient_id FROM shopping_list")
         return [row[0] for row in cursor.fetchall()]
 
-def add_shopping_items(ids):
+def add_shopping_items(items):
     with sqlite3.connect(DB_PATH) as conn:
         cursor = conn.cursor()
         cursor.execute("DELETE FROM shopping_list")
         cursor.executemany(
-            "INSERT OR IGNORE INTO shopping_list (ingredient_id) VALUES (?)",
-            [(i,) for i in ids]
+            "INSERT OR IGNORE INTO shopping_list (ingredient_id, ingredient_name) VALUES (?, ?)",
+            items
         )
         conn.commit()

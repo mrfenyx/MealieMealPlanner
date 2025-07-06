@@ -29,6 +29,7 @@
                     type="checkbox"
                     name="ingredient"
                     value="{{ ing.id }}"
+                    data-name="{{ ing.display }}"
                     class="form-checkbox h-4 w-4 text-orange-500"
                   >
                   <span class="ml-2 text-gray-200">{{ ing.display }}</span>
@@ -79,12 +80,15 @@
     document.getElementById('addBtn').addEventListener('click', () => {
       const selected = Array.from(
         document.querySelectorAll('input[name="ingredient"]:checked')
-      ).map(cb => cb.value);
+      ).map(cb => ({
+        id:   cb.value,
+        name: cb.dataset.name
+      }));
 
       fetch('/shopping-list/add', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
-        body: JSON.stringify({ingredient_ids: selected})
+        body: JSON.stringify({ingredients: selected})
       })
       .then(r => r.json())
       .then(data => {

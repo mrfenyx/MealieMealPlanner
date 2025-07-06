@@ -12,7 +12,6 @@ app = Flask(__name__)
 CORS(app)
 init_db()
 
-
 def get_meal_plan(start_date, end_date):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
     url = (
@@ -159,8 +158,9 @@ def shopping_list():
 @app.route("/shopping-list/add", methods=["POST"])
 def add_to_shopping_list():
     data = request.get_json() or {}
-    ids = data.get("ingredient_ids", [])
-    add_shopping_items(ids)
+    items = data.get("ingredients", [])
+    db_items = [(itm["id"], itm["name"]) for itm in items]
+    add_shopping_items(db_items)
     return jsonify({"success": True})
 
 
