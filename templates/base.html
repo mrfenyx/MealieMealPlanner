@@ -99,8 +99,18 @@
 
         // On page load: disable transitions, restore state, then re-enable
         document.addEventListener('DOMContentLoaded', () => {
+            // temporarily disable transitions on load
             [sidebar, mainContent, container].forEach(el => el.classList.add('no-transition'));
+
+            // on mobile (width < 768px) always start hidden
+            if (window.innerWidth < 768) {
+                setSidebarOpen(false);
+            }
+
+            // now restore the sidebar per (possibly updated) stored state
             updateSidebarState();
+
+            // re-enable transitions immediately
             setTimeout(() => {
                 [sidebar, mainContent, container].forEach(el => el.classList.remove('no-transition'));
             }, 0);
