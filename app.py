@@ -89,12 +89,44 @@ def view_done():
     done_items = [item for item in data.get("items", []) if item.get("id") in done_ids]
     return render_template("done.html", items=done_items, current_page="done")
 
-@app.route('/shopping-list')
+@app.route("/shopping-list")
 def shopping_list():
-    return render_template('shopping_list.html', current_page="shopping-list")
+    # 1. Pull the same 2-week window
+    today = datetime.now().date()
+    start = today - timedelta(days=7)
+    end = today + timedelta(days=7)
+    data = get_meal_plan(start.isoformat(), end.isoformat())
 
-from datetime import datetime, timedelta
-from flask import request
+    # 2. Exclude any "done" items
+    done_ids = set(get_all_done_ids())
+    upcoming = [
+        item for item in data.get("items", [])
+        if item.get("id") not in done_ids
+    ]
+
+    # 3. For each slug, fetch full recipe & grab its ingredient list
+    headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
+    recipes = []
+    for item in upcoming:
+        slug = item["recipe"]["slug"]
+        resp = requests.get(f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers)
+        if not resp.ok:
+            continue
+        recipe = resp.json()
+        ingredients = [
+            {"id": ing.get("referenceId"), "display": ing.get("display")}
+            for ing in recipe.get("recipeIngredient", [])
+        ]
+        recipes.append({
+            "name": recipe.get("name"),
+            "ingredients": ingredients
+        })
+
+    return render_template(
+        "shopping_list.html",
+        recipes=recipes,
+        current_page="shopping_list"
+    )
 
 @app.route("/add/<slug>", methods=["POST"])
 def add_to_plan(slug):
