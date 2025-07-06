@@ -1,10 +1,12 @@
 from flask import Flask, render_template, jsonify
+from flask_cors import CORS
 from datetime import datetime, timedelta
 import requests
 import config
 from db import init_db, mark_done, re_add, get_all_done_ids
 
 app = Flask(__name__)
+CORS(app)
 init_db()
 
 def get_meal_plan(start_date, end_date):
@@ -90,6 +92,47 @@ def view_done():
 @app.route('/shopping-list')
 def shopping_list():
     return render_template('shopping_list.html', current_page="shopping-list")
+
+from datetime import datetime, timedelta
+from flask import request
+
+@app.route("/add/<slug>", methods=["POST"])
+def add_to_plan(slug):
+    # 1) Fetch the recipe by slug to get its ID
+    headers = {
+        "Authorization": f"Bearer {config.MEALIE_API_TOKEN}",
+        "Content-Type": "application/json"
+    }
+    recipe_resp = requests.get(f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers)
+    if not recipe_resp.ok:
+        return jsonify(success=False,
+                       message=f"Could not fetch recipe “{slug}”: {recipe_resp.text}"), recipe_resp.status_code
+
+    recipe = recipe_resp.json()
+    recipe_id = recipe.get("id")
+    if not recipe_id:
+        return jsonify(success=False, message="Recipe ID missing in response"), 500
+
+    # 2) Compute the date 7 days from now
+    target_date = (datetime.now().date() + timedelta(days=7)).isoformat()
+
+    # 3) POST to Mealie’s “create mealplan entry” endpoint
+    payload = {
+        "date":       target_date,
+        "recipeId":   recipe_id,
+        "entryType":  "dinner"     # or any valid slot: breakfast, lunch, etc.
+    }
+    add_resp = requests.post(
+        f"{config.MEALIE_URL}/api/households/mealplans",
+        headers=headers,
+        json=payload
+    )
+
+    if add_resp.ok:
+        return jsonify(success=True), 201
+    else:
+        return jsonify(success=False,
+                       message=add_resp.text), add_resp.status_code
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
