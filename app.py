@@ -16,7 +16,7 @@ init_db()
 def get_meal_plan(start_date, end_date):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
     url = (
-        f"{config.MEALIE_URL}/api/households/mealplans"
+        f"{config.MEALIE_API_URL}/api/households/mealplans"
         f"?start_date={start_date}&end_date={end_date}"
     )
     response = requests.get(url, headers=headers)
@@ -69,7 +69,7 @@ def index():
 @app.route("/remove/<int:item_id>", methods=["POST"])
 def remove_meal(item_id):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
-    url = f"{config.MEALIE_URL}/api/households/mealplans/{item_id}"
+    url = f"{config.MEALIE_API_URL}/api/households/mealplans/{item_id}"
     response = requests.delete(url, headers=headers)
     if response.ok:
         return jsonify({"success": True})
@@ -132,7 +132,7 @@ def shopping_list():
     for item in upcoming:
         slug = item["recipe"]["slug"]
         resp = requests.get(
-            f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers
+            f"{config.MEALIE_API_URL}/api/recipes/{slug}", headers=headers
         )
         if not resp.ok:
             continue
@@ -188,7 +188,7 @@ def add_to_plan(slug):
         "Content-Type": "application/json"
     }
     recipe_resp = requests.get(
-        f"{config.MEALIE_URL}/api/recipes/{slug}", headers=headers
+        f"{config.MEALIE_API_URL}/api/recipes/{slug}", headers=headers
     )
     if not recipe_resp.ok:
         return jsonify(
@@ -208,7 +208,7 @@ def add_to_plan(slug):
         "entryType":  "dinner"
     }
     add_resp = requests.post(
-        f"{config.MEALIE_URL}/api/households/mealplans",
+        f"{config.MEALIE_API_URL}/api/households/mealplans",
         headers=headers, json=payload
     )
     if add_resp.ok:
