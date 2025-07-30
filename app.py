@@ -7,7 +7,7 @@ from db import (
     init_db, mark_done, re_add, get_all_done_ids,
     get_shopping_ids, add_shopping_items
 )
-import og
+import ourgroceries as og
 
 app = Flask(__name__)
 CORS(app)
