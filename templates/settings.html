@@ -1,0 +1,50 @@
+{% extends "base.html" %}
+
+{% block title %}Settings{% endblock %}
+
+{% block content %}
+<main class="p-4 sm:p-6 max-w-xl mx-auto">
+    {% if message %}
+    <div id="toast"
+        class="fixed bottom-4 right-4 z-50 flex items-center w-auto max-w-xs p-4 text-sm text-white bg-green-600 rounded-lg shadow-lg animate-slide-in"
+        role="alert">
+        <div class="mr-3 text-white font-semibold">
+            {{ message }}
+        </div>
+        <button type="button" class="ml-auto -mx-1.5 -my-1.5 text-white rounded-lg focus:ring-2 focus:ring-white p-1 hover:bg-green-700 inline-flex h-6 w-6"
+                onclick="document.getElementById('toast').remove()" aria-label="Close">
+            <svg class="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                    clip-rule="evenodd"></path>
+            </svg>
+        </button>
+    </div>
+
+    <script>
+    setTimeout(() => {
+        const toast = document.getElementById('toast');
+        if (toast) toast.remove();
+    }, 5000);
+    </script>
+    {% endif %}
+
+    <form method="POST" class="space-y-4 shadow-md rounded p-6">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <label for="days_before" class="font-medium w-32">Days Before:</label>
+            <input type="number" name="days_before" id="days_before" value="{{ days_before }}"
+                   min="0" class="border border-gray-300 rounded px-3 py-2 w-full sm:w-16 text-black text-center">
+        </div>
+
+        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
+            <label for="days_after" class="font-medium w-32">Days After:</label>
+            <input type="number" name="days_after" id="days_after" value="{{ days_after }}"
+                   min="0" class="border border-gray-300 rounded px-3 py-2 w-full sm:w-16 text-black text-center">
+        </div>
+
+        <button type="submit"
+                class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded text-sm">
+            Save Settings
+        </button>
+    </form>
+</main>
+{% endblock %}

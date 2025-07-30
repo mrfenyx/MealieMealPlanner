@@ -1,25 +1,34 @@
-from flask import Flask, render_template, jsonify, request
+from flask import Flask, render_template, jsonify, request, redirect
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import requests
+from urllib.parse import urlencode
 import config
 from db import (
     init_db, mark_done, re_add, get_all_done_ids,
     get_shopping_ids, add_shopping_items
 )
-import ourgroceries as og
+from config_manager import save_config_var
+import ourgroceries_helper as og
 
 app = Flask(__name__)
 CORS(app)
 init_db()
 
-def get_meal_plan(start_date, end_date):
+def get_meal_plan(start_date=None, end_date=None):
     headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
-    url = (
-        f"{config.MEALIE_API_URL}/api/households/mealplans"
-        f"?start_date={start_date}&end_date={end_date}"
-    )
+    
+    params = {}
+    if start_date:
+        params["start_date"] = start_date
+    if end_date:
+        params["end_date"] = end_date
+
+    query_string = f"?{urlencode(params)}" if params else ""
+    url = f"{config.MEALIE_API_URL}/api/households/mealplans{query_string}"
+
     response = requests.get(url, headers=headers)
+
     try:
         data = response.json()
     except Exception:
@@ -50,10 +59,13 @@ def get_meal_plan(start_date, end_date):
 
 @app.route("/")
 def index():
-    today = datetime.now().date()
-    start = today - timedelta(days=7)
-    end = today + timedelta(days=7)
-    data = get_meal_plan(start.isoformat(), end.isoformat())
+    if config.DAYS_AFTER > 0 or config.DAYS_BEFORE > 0:
+        today = datetime.now().date()
+        start = today - timedelta(days=config.DAYS_BEFORE)
+        end = today + timedelta(days=config.DAYS_AFTER)
+        data = get_meal_plan(start.isoformat(), end.isoformat())
+    else:
+        data = get_meal_plan()
     done_ids = set(get_all_done_ids())
     visible_items = [
         item for item in data.get("items", [])
@@ -62,7 +74,29 @@ def index():
     return render_template(
         "index.html",
         items=visible_items,
-        current_page="index"
+        current_page="index",
+    )
+
+
+@app.route("/settings", methods=["GET", "POST"])
+def settings():
+    message = None
+    if request.method == "POST":
+        days_before = int(request.form.get("days_before", 7))
+        days_after = int(request.form.get("days_after", 7))
+
+        save_config_var("DAYS_BEFORE", days_before)
+        save_config_var("DAYS_AFTER", days_after)
+        config.DAYS_BEFORE = days_before
+        config.DAYS_AFTER = days_after
+        message = "Settings updated successfully."
+
+    return render_template(
+        "settings.html",
+        days_before=config.DAYS_BEFORE,
+        days_after=config.DAYS_AFTER,
+        message=message,
+        current_page="settings"
     )
 
 
@@ -95,10 +129,7 @@ def readd_meal(item_id):
 
 @app.route("/done")
 def view_done():
-    today = datetime.now().date()
-    start = today - timedelta(days=30)
-    end = today + timedelta(days=7)
-    data = get_meal_plan(start.isoformat(), end.isoformat())
+    data = get_meal_plan()
     done_ids = set(get_all_done_ids())
     done_items = [
         item for item in data.get("items", [])
@@ -113,13 +144,14 @@ def view_done():
 
 @app.route("/shopping-list")
 def shopping_list():
-    # 1. Pull the same 2-week window
-    today = datetime.now().date()
-    start = today - timedelta(days=7)
-    end = today + timedelta(days=7)
-    data = get_meal_plan(start.isoformat(), end.isoformat())
+    if config.DAYS_AFTER > 0 or config.DAYS_BEFORE > 0:
+        today = datetime.now().date()
+        start = today - timedelta(days=config.DAYS_BEFORE)
+        end = today + timedelta(days=config.DAYS_AFTER)
+        data = get_meal_plan(start.isoformat(), end.isoformat())
+    else:
+        data = get_meal_plan()
 
-    # 2. Exclude any "done" items
     done_ids = set(get_all_done_ids())
     upcoming = [
         item for item in data.get("items", [])
