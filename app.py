@@ -1,4 +1,4 @@
-from flask import Flask, render_template, jsonify, request, redirect
+from flask import Flask, render_template, jsonify, request, Response, abort, stream_with_context, url_for
 from flask_cors import CORS
 from datetime import datetime, timedelta
 import requests
@@ -44,9 +44,7 @@ def get_meal_plan(start_date=None, end_date=None):
         _id = recipe.get("id")
         slug = recipe.get("slug")
         if _id:
-            item["image_url"] = (
-                f"{config.MEALIE_URL}/api/media/recipes/{_id}/images/min-original.webp"
-            )
+            item["image_url"] = url_for("proxy_recipe_image", recipe_id=_id, _external=False)
         else:
             item["image_url"] = None
         if slug:
@@ -248,6 +246,38 @@ def add_to_plan(slug):
     else:
         return jsonify(success=False, message=add_resp.text), add_resp.status_code
 
+@app.route("/img/recipe/<recipe_id>")
+def proxy_recipe_image(recipe_id: str):
+    # Use the INTERNAL base to fetch the image quickly
+    # Same path Mealie uses for public media, just on the internal host
+    internal_url = f"{config.MEALIE_API_URL}/api/media/recipes/{recipe_id}/images/min-original.webp"
+
+    headers = {"Authorization": f"Bearer {config.MEALIE_API_TOKEN}"}
+
+    try:
+        upstream = requests.get(internal_url, headers=headers, stream=True, timeout=10)
+    except requests.RequestException:
+        abort(502)
+
+    if not upstream.ok:
+        abort(upstream.status_code)
+
+    def generate():
+        for chunk in upstream.iter_content(chunk_size=8192):
+            if chunk:
+                yield chunk
+
+    resp = Response(
+        stream_with_context(generate()),
+        status=upstream.status_code,
+        content_type=upstream.headers.get("Content-Type", "image/webp"),
+    )
+    # Basic caching so the browser doesn’t re-download on every visit
+    resp.headers["Cache-Control"] = "public, max-age=86400"
+    etag = upstream.headers.get("ETag")
+    if etag:
+        resp.headers["ETag"] = etag
+    return resp
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
