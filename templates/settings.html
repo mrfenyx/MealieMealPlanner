@@ -6,8 +6,8 @@
 <main class="p-4 sm:p-6 max-w-xl mx-auto">
     {% if message %}
     <div id="toast"
-        class="fixed bottom-4 right-4 z-50 flex items-center w-auto max-w-xs p-4 text-sm text-white bg-green-600 rounded-lg shadow-lg animate-slide-in"
-        role="alert">
+        class="fixed bottom-4 right-4 z-50 flex items-center w-auto max-w-xs p-4 text-sm text-white bg-green-600 rounded-lg shadow-lg animate-slide-in transition-opacity duration-300"
+        role="alert" aria-live="polite">
         <div class="mr-3 text-white font-semibold">
             {{ message }}
         </div>
@@ -21,28 +21,31 @@
     </div>
 
     <script>
-    setTimeout(() => {
         const toast = document.getElementById('toast');
-        if (toast) toast.remove();
-    }, 5000);
+        if (toast) {
+            setTimeout(() => toast.classList.add('opacity-0'), 4500); // fade out
+            setTimeout(() => toast.remove(), 5000);                  // remove from DOM
+        }
     </script>
     {% endif %}
 
-    <form method="POST" class="space-y-4 shadow-md rounded p-6">
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-            <label for="days_before" class="font-medium w-32">Days Before:</label>
+    <form method="POST" autocomplete="off" class="space-y-6 shadow-md rounded p-6 max-w-full">
+        <div class="flex flex-wrap items-center gap-4">
+            <label for="days_before" class="font-medium w-32 min-w-[100px]">Days Before:</label>
             <input type="number" name="days_before" id="days_before" value="{{ days_before }}"
-                   min="0" class="border border-gray-300 rounded px-3 py-2 w-full sm:w-16 text-black text-center">
+                min="0" max="30" required
+                class="flex-grow min-w-[80px] max-w-[100px] border border-gray-300 rounded px-3 py-2 text-black text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
         </div>
 
-        <div class="flex flex-col sm:flex-row sm:items-center gap-4">
-            <label for="days_after" class="font-medium w-32">Days After:</label>
+        <div class="flex flex-wrap items-center gap-4">
+            <label for="days_after" class="font-medium w-32 min-w-[100px]">Days After:</label>
             <input type="number" name="days_after" id="days_after" value="{{ days_after }}"
-                   min="0" class="border border-gray-300 rounded px-3 py-2 w-full sm:w-16 text-black text-center">
+                min="0" max="30" required
+                class="flex-grow min-w-[80px] max-w-[100px] border border-gray-300 rounded px-3 py-2 text-black text-center focus:ring-2 focus:ring-orange-500 focus:border-orange-500" />
         </div>
 
         <button type="submit"
-                class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded text-sm">
+                class="bg-orange-500 hover:bg-orange-600 text-white font-semibold px-4 py-2 rounded text-sm focus:ring-2 focus:ring-orange-500 focus:outline-none">
             Save Settings
         </button>
     </form>
