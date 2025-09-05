@@ -116,14 +116,17 @@ def setup_database() -> int:
     try:
         db_exists = os.path.exists(DB_PATH)
         
-        # Create backup only if database will be changed
+        # Ensure the backup directory exists
+        backup_dir = "db_backups"
+        os.makedirs(backup_dir, exist_ok=True)
+
         backup_created = False
         if db_exists:
             # Check if migrations are needed
             with sqlite3.connect(DB_PATH) as conn:
                 current_version = _get_schema_version(conn)
                 if current_version < CURRENT_SCHEMA_VERSION:
-                    backup_path = f"{DB_PATH}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}"
+                    backup_path = os.path.join(backup_dir, f"{DB_PATH}.backup.{datetime.now().strftime('%Y%m%d_%H%M%S')}")
                     shutil.copy2(DB_PATH, backup_path)
                     logger.info(f"📦 Database backed up to {backup_path}")
                     backup_created = True
