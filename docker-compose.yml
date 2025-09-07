@@ -7,5 +7,6 @@ services:
     env_file:
       - ./.env
     volumes:
-      # Persist the SQLite database
+      # Persist the SQLite database and config file
       - ./planner.db:/app/planner.db
+      - ./config.json:/app/config.json
